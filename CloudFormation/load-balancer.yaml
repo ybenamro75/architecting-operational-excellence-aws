@@ -25,7 +25,7 @@ Resources:
         CidrIp: "0.0.0.0/0"
       VpcId:
         Fn::ImportValue:
-          Fn::Sub: "${VPCStackName}-VPCID"
+          Fn::Sub: "${VPCStackName}-VPC"
 
   ApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
