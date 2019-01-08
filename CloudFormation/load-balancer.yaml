@@ -13,6 +13,20 @@ Parameters:
     AllowedPattern: "^[a-zA-Z][-a-zA-Z0-9]*$"
 
 Resources:
+  ALBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: >
+        Allow inbound HTTP from the load balancer
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: '80'
+        ToPort: '80'
+        CidrIp: "0.0.0.0/0"
+      VpcId:
+        Fn::ImportValue:
+          Fn::Sub: "${VPCStackName}-VPCID"
+
   ApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
@@ -57,9 +71,19 @@ Resources:
         Value: '30'
 
 Outputs:
-  ALB:
-    Description: Target group ID
+  ALBTargetGroup:
+    Description: Target group ARN
     Value: !Ref ALBTargetGroup
     Export:
       Name:
         !Sub "${AWS::StackName}-TargetGroup"
+
+  WebsiteURL:
+    Description: URL for ALB
+    Value:
+      Fn::Join:
+      - ''
+      - - http://
+        - Fn::GetAtt:
+          - ApplicationLoadBalancer
+          - DNSName
