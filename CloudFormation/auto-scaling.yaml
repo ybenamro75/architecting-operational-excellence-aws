@@ -13,16 +13,8 @@ Parameters:
     MaxLength: 255
     AllowedPattern: "^[a-zA-Z][-a-zA-Z0-9]*$"
 
-  ALBStackName:
-    Description: Name of an active CloudFormation stack that contains the ALB
-      resources that will be used in this stack.
-    Type: String
-    MinLength: 1
-    MaxLength: 255
-    AllowedPattern: "^[a-zA-Z][-a-zA-Z0-9]*$"
-
   KeyName:
-    Description: Name of an existing EC2 KeyPair to enable SSH access to the instances
+    Description: Name of an existing EC2 key pair
     Type: AWS::EC2::KeyPair::KeyName
     ConstraintDescription: Must be the name of an existing EC2 KeyPair.
 
@@ -47,7 +39,7 @@ Parameters:
     ConstraintDescription: must be a valid T2 EC2 instance type.
   
   SSHLocation:
-    Description: " The IP address range that can be used to SSH to the EC2 instances"
+    Description: "IP address range that can SSH to the EC2 instances"
     Type: String
     MinLength: '9'
     MaxLength: '18'
@@ -95,17 +87,20 @@ Mappings:
       HVM64: ami-3e60745c
 
 Resources:
+  ALBStack:
+    Description: The nested stack containing the application load balancer.
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.amazonaws.com/architecting-operational-excellence-aws/load-balancer.yaml
+
   InstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: "Allow inbound HTTP from the load balancer and inbound SSH from SSHLocation"
+      GroupDescription: "Allow inbound HTTP and SSH"
       SecurityGroupIngress:
       - IpProtocol: tcp
         FromPort: '80'
         ToPort: '80'
-        SourceSecurityGroupId:
-          - Fn::ImportValue:
-              !Sub "${ALBStackName}-SecurityGroup"
       - IpProtocol: tcp
         FromPort: '22'
         ToPort: '22'
@@ -189,8 +184,7 @@ Resources:
       DesiredCapacity:
         Ref: GroupSize
       TargetGroupARNs:
-      - Fn::ImportValue:
-          !Sub "${ALBStackName}-TargetGroup"
+        Fn::GetAtt: [ ALBStack, Outputs.ALBTargetGroup ]
     CreationPolicy:
       ResourceSignal:
         Timeout: PT10M
