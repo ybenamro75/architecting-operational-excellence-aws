@@ -1,13 +1,13 @@
 ---
-AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   AWS CloudFormation Template that creates a launch template and an Auto
   Scaling Group. Requires network stack name as a parameter.
 
 Parameters:
   VPCStackName:
-    Description: Name of an active CloudFormation stack that contains the VPC
-      resources that will be used in this stack.
+    Description: >
+      Name of an active CloudFormation stack that contains the VPC
+      resources to be used by this stack.
     Type: String
     MinLength: 1
     MaxLength: 255
@@ -16,15 +16,12 @@ Parameters:
   KeyName:
     Description: Name of an existing EC2 key pair
     Type: AWS::EC2::KeyPair::KeyName
-    ConstraintDescription: Must be the name of an existing EC2 KeyPair.
+    ConstraintDescription: Must be the name of an existing EC2 key pair
 
   GroupSize:
     Default: '2'
     Description: The initial nuber of Webserver instances
     Type: Number
-    MinValue: '1'
-    MaxValue: '6'
-    ConstraintDescription: Must be between 1 and 6 EC2 instances.
 
   InstanceType:
     Description: Webserver EC2 instance type
@@ -36,7 +33,7 @@ Parameters:
     - t2.small
     - t2.medium
     - t2.large
-    ConstraintDescription: must be a valid T2 EC2 instance type.
+    ConstraintDescription: Must be a valid T2 EC2 instance type.
   
   SSHLocation:
     Description: "IP address range that can SSH to the EC2 instances"
@@ -48,7 +45,7 @@ Parameters:
     ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
 
 Mappings:
-  AWSRegionArch2AMI:
+  AWSRegion2AMI:
     us-east-1:
       HVM64: ami-97785bed
     us-west-2:
@@ -92,6 +89,8 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: https://s3.amazonaws.com/architecting-operational-excellence-aws/load-balancer.yaml
+      Parameters:
+        VPCStackName: !Ref VPCStackName
 
   InstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -108,14 +107,13 @@ Resources:
           Ref: SSHLocation
       VpcId:
         Fn::ImportValue:
-          Fn::Sub: "${VPCStackName}-VPCID"
+          Fn::Sub: "${VPCStackName}-VPC"
 
   InstanceRole:
     Type: AWS::IAM::Role
     Properties:
       RoleName: InstanceRole
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
         Statement:
         - Effect: Allow
           Principal:
@@ -142,7 +140,7 @@ Resources:
       LaunchTemplateData:
         ImageId:
           Fn::FindInMap:
-            - AWSRegionArch2AMI
+            - AWSRegion2AMI
             - !Ref AWS::Region
             - HVM64
         IamInstanceProfile:
@@ -158,14 +156,11 @@ Resources:
           Ref: KeyName
         UserData:
           Fn::Base64:
-            Fn::Join:
-            - ''
-            - - "#!/bin/bash\n"
-              - "sudo yum -y update"
-              - "sudo yum -y install aws-cfn-bootstrap"
-              - "/opt/aws/bin/cfn-signal -e 0 --stack "
-              - Ref: AWS::StackName
-              - " --resource AutoScalingGroup"
+            Fn::Sub: |
+              #!/bin/bash -xe
+              sudo yum -y update
+              sudo yum -y install aws-cfn-bootstrap
+              /opt/aws/bin/cfn-signal -e 0 --region ${AWS::Region} --stack ${AWS::StackName} --resource AutoScalingGroup
 
   AutoScalingGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
@@ -180,11 +175,11 @@ Resources:
           Ref: WebserverLaunchTemplate
         Version: '1'
       MinSize: '1'
-      MaxSize: '5'
+      MaxSize: '6'
       DesiredCapacity:
         Ref: GroupSize
       TargetGroupARNs:
-        Fn::GetAtt: [ ALBStack, Outputs.ALBTargetGroup ]
+      -  Fn::GetAtt: [ ALBStack, Outputs.ALBTargetGroup ]
     CreationPolicy:
       ResourceSignal:
         Timeout: PT10M
