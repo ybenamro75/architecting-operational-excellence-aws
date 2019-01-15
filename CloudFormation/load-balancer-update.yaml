@@ -16,7 +16,7 @@ Resources:
   ALBSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: "Allow inbound HTTP from the load balancer."
+      GroupDescription: "Allow inbound HTTP from the load balancer"
       SecurityGroupIngress:
       - IpProtocol: tcp
         FromPort: '80'
