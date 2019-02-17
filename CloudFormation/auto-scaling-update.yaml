@@ -88,7 +88,7 @@ Resources:
     Description: The nested stack containing the application load balancer.
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.amazonaws.com/architecting-operational-excellence-aws/load-balancer-update.yaml
+      TemplateURL: https://s3.amazonaws.com/architecting-operational-excellence-aws/load-balancer.yaml
       Parameters:
         VPCStackName: !Ref VPCStackName
 
@@ -160,6 +160,12 @@ Resources:
               #!/bin/bash -xe
               sudo yum -y update
               sudo yum -y install aws-cfn-bootstrap
+              yum install -y ruby
+              yum install -y aws-cli
+              cd /home/ec2-user
+              aws s3 cp s3://aws-codedeploy-us-east-1/latest/install . --region us-east-1
+              chmod +x ./install
+              ./install auto
               /opt/aws/bin/cfn-signal -e 0 --region ${AWS::Region} --stack ${AWS::StackName} --resource AutoScalingGroup
 
   AutoScalingGroup:
