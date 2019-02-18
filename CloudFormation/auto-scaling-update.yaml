@@ -179,7 +179,7 @@ Resources:
       LaunchTemplate:
         LaunchTemplateId:
           Ref: WebserverLaunchTemplate
-        Version: '1'
+        Version: '2'
       MinSize: '1'
       MaxSize: '6'
       DesiredCapacity:
