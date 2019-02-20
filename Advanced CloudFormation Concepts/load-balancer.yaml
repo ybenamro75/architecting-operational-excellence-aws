@@ -18,10 +18,11 @@ Resources:
     Properties:
       GroupDescription: "Allow inbound HTTP from the load balancer"
       SecurityGroupIngress:
-      - IpProtocol: tcp
-        FromPort: '80'
-        ToPort: '80'
-        CidrIp: "0.0.0.0/0"
+        -
+          IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: "0.0.0.0/0"
       VpcId:
         Fn::ImportValue:
           Fn::Sub: "${VPCStackName}-VPC"
@@ -34,6 +35,8 @@ Resources:
           !Sub "${VPCStackName}-PublicSubnet1"
       - Fn::ImportValue:
           !Sub "${VPCStackName}-PublicSubnet2"
+      SecurityGroups:
+      - Ref: ALBSecurityGroup
 
   ALBListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
